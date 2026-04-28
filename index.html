@@ -134,7 +134,7 @@
         const header = lines[0].split(',');
         const conf = [
             { n: 'BeyKita!', c: 9 }, { n: 'BeyDen', c: 12 }, { n: 'BeyDojo', c: 15 },
-            { n: 'PlayBlade', c: 18 }, { n: 'BeastBey', c: 21 }, { n: 'Theplayground', c: 24 }
+            { n: 'PlayBlade', c: 18 }, { n: 'BeastBey', c: 21 }, { n: 'ThePlayground', c: 24 }
         ];
         left.innerHTML = ''; right.innerHTML = '';
         conf.forEach((v, i) => {
@@ -156,7 +156,7 @@
         const modal = new bootstrap.Modal(document.getElementById('attendanceModal'));
         document.getElementById('modalPlayerName').innerText = name;
         const venues = ['BeyKita!', 'ThePlayground', 'BeyDen', 'BeyDojo'];
-        const months = [{l:'April 2026', m:'-04-'}, {l:'May 2026', m:'-05-'}, {l:'June 2026', m:'-06-'}];
+        const months = [{l:'April 2026', m:'/04/'}, {l:'May 2026', m:'/05/'}, {l:'June 2026', m:'/06/'}];
         
         let html = '';
         months.forEach(month => {
