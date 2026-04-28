@@ -20,22 +20,15 @@
         .rank-3 { background: #92400e; color: #fff; }
         .total-score { font-weight: bold; color: #60a5fa; }
         .venue-row { display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px solid #1f2937; font-size: 0.85rem; }
-        /* Highlighting for the Top 16 */
-        .row-top-16 {
-            background-color: rgba(59, 130, 246, 0.05); /* Very subtle blue tint */
+        /* Single style for all Top 16 Qualifiers */
+        .row-qualifier {
+            background-color: rgba(59, 130, 246, 0.08); /* Subtle blue background */
+            border-left: 4px solid #3b82f6; /* Consistent blue bar on the left */
         }
 
-        .qualifier-tag {
-            border-left: 4px solid #3b82f6; /* Blue bar for ranks 4-16 */
-        }
-
-        .podium-tag {
-            border-left: 4px solid #fbbf24; /* Gold bar for ranks 1-3 */
-        }
-
-        /* Row hover effect for better readability */
+        /* Row hover effect */
         .table-hover tbody tr:hover {
-            background-color: rgba(255, 255, 255, 0.05) !important;
+            background-color: rgba(255, 255, 255, 0.08) !important;
         }
     </style>
 </head>
@@ -184,13 +177,12 @@
         const row = document.createElement('tr');
         const rankNum = parseInt(p.RANK);
         
-        // Apply highlighting logic
-        if (rankNum >= 1 && rankNum <= 3) {
-            row.classList.add('podium-tag', 'row-top-16');
-        } else if (rankNum >= 4 && rankNum <= 16) {
-            row.classList.add('qualifier-tag', 'row-top-16');
+        // Treat everyone from 1 to 16 exactly the same
+        if (rankNum >= 1 && rankNum <= 16) {
+            row.classList.add('row-qualifier');
         }
 
+        // Standard rank circle colors can stay or you can make them all gray
         let rankClass = 'rank-badge';
         if(p.RANK == "1") rankClass += ' rank-1';
         else if(p.RANK == "2") rankClass += ' rank-2';
@@ -202,7 +194,7 @@
                 <span class="fw-bold ${rankNum <= 16 ? 'text-white' : 'text-secondary'}">
                     ${p['PLAYER NAME']}
                 </span>
-                ${rankNum <= 16 ? '<span class="badge bg-primary ms-2" style="font-size: 0.6rem;">TOP 16</span>' : ''}
+                ${rankNum <= 16 ? '<span class="badge bg-primary ms-2" style="font-size: 0.65rem;">QUALIFIED</span>' : ''}
             </td>
             <td><small class="text-info">+${p['TRAVEL BONUS']}</small></td>
             <td class="text-end"><span class="total-score">${p['TOTAL SCORE']}</span></td>
