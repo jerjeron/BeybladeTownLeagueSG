@@ -7,55 +7,75 @@
     <link rel="icon" href="data:;base64,iVBORw0KGgo=">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
-        body { background-color: #0b1120; color: #f8fafc; font-family: sans-serif; }
-        .hero { background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%); padding: 40px 20px; text-align: center; border-bottom: 4px solid #fbbf24; }
-        .leaderboard-card { background: #1e293b; border-radius: 16px; padding: 25px; margin-top: 20px; border: 1px solid #334155; }
-        .search-bar { background: #0f172a; border: 1px solid #334155; color: white; border-radius: 12px; padding: 15px; width: 100%; margin-bottom: 20px; }
-        .rank-badge { width: 35px; height: 35px; display: flex; align-items: center; justify-content: center; border-radius: 50%; font-weight: bold; background: #334155; }
+        body { background-color: #0b1120; color: #f8fafc; font-family: 'Inter', sans-serif; }
+        .hero { background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%); padding: 30px 10px; text-align: center; border-bottom: 4px solid #fbbf24; }
+        .main-card { background: #1e293b; border-radius: 16px; padding: 20px; border: 1px solid #334155; height: 100%; }
+        .venue-card { background: #111827; border-radius: 12px; padding: 15px; margin-bottom: 20px; border: 1px solid #374151; font-size: 0.85rem; }
+        .venue-title { color: #fbbf24; font-weight: bold; border-bottom: 1px solid #374151; padding-bottom: 5px; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 1px; }
+        .search-bar { background: #0f172a; border: 1px solid #334155; color: white; border-radius: 10px; padding: 12px; width: 100%; margin-bottom: 20px; }
+        .rank-badge { width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; border-radius: 50%; font-weight: bold; background: #334155; font-size: 0.8rem; }
         .rank-1 { background: #fbbf24; color: #000; }
         .rank-2 { background: #94a3b8; color: #000; }
         .rank-3 { background: #92400e; color: #fff; }
-        .total-score { font-size: 1.2rem; font-weight: bold; color: #60a5fa; }
+        .total-score { font-weight: bold; color: #60a5fa; }
+        .venue-row { display: flex; justify-content: space-between; padding: 3px 0; border-bottom: 1px solid #1f2937; }
     </style>
 </head>
 <body>
 
-<div class="hero">
-    <h1>🏆 BeyBlade Town League 2026</h1>
+<div class="hero mb-4">
+    <h1 class="fw-bold">BeyBlade Town League 2026</h1>
 </div>
 
-<div class="container">
-    <div class="leaderboard-card">
-        <input type="text" id="playerSearch" class="search-bar" placeholder="🔍 Search player name..." onkeyup="filterData()">
-        
-        <div class="table-responsive">
-            <table class="table table-dark table-hover">
-                <thead>
-                    <tr>
-                        <th>Rank</th>
-                        <th>Player</th>
-                        <th>Bonus</th>
-                        <th class="text-end">Score</th>
-                    </tr>
-                </thead>
-                <tbody id="leaderboardBody">
-                    <tr><td colspan="4" class="text-center">Loading players...</td></tr>
-                </tbody>
-            </table>
+<div class="container-fluid px-4">
+    <div class="row">
+        <div class="col-lg-3 order-2 order-lg-1" id="leftVenues">
+            </div>
+
+        <div class="col-lg-6 order-1 order-lg-2">
+            <div class="main-card mb-4">
+                <h4 class="text-center mb-4">🏆 Overall Standings</h4>
+                <input type="text" id="playerSearch" class="search-bar" placeholder="🔍 Search player name..." onkeyup="filterData()">
+                <div class="table-responsive">
+                    <table class="table table-dark table-sm">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Player</th>
+                                <th>Bonus</th>
+                                <th class="text-end">Score</th>
+                            </tr>
+                        </thead>
+                        <tbody id="leaderboardBody">
+                            <tr><td colspan="4" class="text-center">Loading live rankings...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
         </div>
+
+        <div class="col-lg-3 order-3 order-lg-3" id="rightVenues">
+            </div>
     </div>
 </div>
 
 <script>
-    // 1. DATA AND HELPER FUNCTIONS FIRST
     const sheetUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTN6e0bZ_iyM0z_nk42aiUL8kelO__vc2-vY_GtENxRzXDdXzLnOsWobXVBElJJZt2S4AC5BmRbTuOh/pub?gid=900577145&single=true&output=csv';
     window.allPlayers = [];
 
-    // This defines renderTable so fetchLeaderboard can find it
-    function renderTable(data) {
+    // Configuration for your venue columns in the spreadsheet
+    const venueConfigs = [
+        { name: 'BeyKita!', nameCol: 8, ptsCol: 9 },
+        { name: 'BeyDen', nameCol: 11, ptsCol: 12 },
+        { name: 'BeyDojo', nameCol: 14, ptsCol: 15 },
+        { name: 'PlayBlade', nameCol: 17, ptsCol: 18 },
+        { name: 'BeastBey', nameCol: 20, ptsCol: 21 },
+        { name: 'Theplayground', nameCol: 23, ptsCol: 24 }
+    ];
+
+    function renderMainTable(data) {
         const body = document.getElementById('leaderboardBody');
         body.innerHTML = '';
-        
         data.forEach(p => {
             const row = document.createElement('tr');
             let rankClass = 'rank-badge';
@@ -73,23 +93,46 @@
         });
     }
 
-    // This defines filterData so the Search Bar can find it
-    function filterData() {
-        const term = document.getElementById('playerSearch').value.toLowerCase();
-        const filtered = window.allPlayers.filter(p => 
-            p['PLAYER NAME'].toLowerCase().includes(term)
-        );
-        renderTable(filtered);
+    function renderVenueCards(lines) {
+        const leftBox = document.getElementById('leftVenues');
+        const rightBox = document.getElementById('rightVenues');
+        leftBox.innerHTML = '';
+        rightBox.innerHTML = '';
+
+        venueConfigs.forEach((v, index) => {
+            let html = `<div class="venue-card"><div class="venue-title">${v.name}</div>`;
+            let count = 0;
+
+            // Start from line 3 (index 2) to skip headers like "Player Name / Total Points"
+            for (let i = 2; i < lines.length; i++) {
+                const cols = lines[i].split(',');
+                const pName = cols[v.nameCol]?.trim();
+                const pPts = cols[v.ptsCol]?.trim();
+
+                if (pName && pName !== "" && pName !== "Player Name" && count < 5) {
+                    html += `
+                        <div class="venue-row">
+                            <span>${pName}</span>
+                            <span class="text-info fw-bold">${pPts}</span>
+                        </div>`;
+                    count++;
+                }
+            }
+            html += `</div>`;
+            
+            // Put first 3 on left, others on right
+            if (index < 3) leftBox.innerHTML += html;
+            else rightBox.innerHTML += html;
+        });
     }
 
-    // 2. FETCH LOGIC LAST
     async function fetchLeaderboard() {
         try {
             const response = await fetch(sheetUrl);
             const csvText = await response.text();
             const lines = csvText.split('\n');
-            const players = [];
             
+            const players = [];
             for (let i = 1; i < lines.length; i++) {
                 const cols = lines[i].split(',');
                 if (cols[0] && cols[1] && !isNaN(cols[0])) {
@@ -102,11 +145,15 @@
                 }
             }
             window.allPlayers = players;
-            renderTable(players); // Now it is defined!
-        } catch (error) {
-            console.error("Error:", error);
-            document.getElementById('leaderboardBody').innerHTML = '<tr><td colspan="4">Error loading data.</td></tr>';
-        }
+            renderMainTable(players);
+            renderVenueCards(lines); // Generate the store cards
+        } catch (e) { console.error(e); }
+    }
+
+    function filterData() {
+        const term = document.getElementById('playerSearch').value.toLowerCase();
+        const filtered = window.allPlayers.filter(p => p['PLAYER NAME'].toLowerCase().includes(term));
+        renderMainTable(filtered);
     }
 
     window.onload = fetchLeaderboard;
