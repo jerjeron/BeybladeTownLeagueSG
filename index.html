@@ -28,7 +28,7 @@
 
 <div class="hero mb-4">
     <h1 class="fw-bold">BEYBLADE TOWN LEAGUE 2026</h1>
-    <p class="opacity-75">Live Rankings & Attendance Tracker</p>
+    <p class="opacity-75">Rankings & Attendance Tracker</p>
 </div>
 
 <div class="container-fluid px-4">
@@ -60,7 +60,7 @@
 
 <div class="modal fade" id="attendanceModal" tabindex="-1">
   <div class="modal-dialog modal-dialog-centered">
-    <div class="modal-content bg-dark text-white border-secondary shadow-lg">
+    <div class="modal-content bg-dark text-white border-secondary">
       <div class="modal-header border-secondary">
         <h5 class="modal-title" id="modalPlayerName">Attendance Status</h5>
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
@@ -72,9 +72,8 @@
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-    // --- CONFIGURATION ---
     const lbUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTN6e0bZ_iyM0z_nk42aiUL8kelO__vc2-vY_GtENxRzXDdXzLnOsWobXVBElJJZt2S4AC5BmRbTuOh/pub?gid=900577145&single=true&output=csv';
-    const diUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTN6e0bZ_iyM0z_nk42aiUL8kelO__vc2-vY_GtENxRzXDdXzLnOsWobXVBElJJZt2S4AC5BmRbTuOh/pub?gid=1870481325&single=true&output=csv';
+    const diUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTN6e0bZ_iyM0z_nk42aiUL8kelO__vc2-vY_GtENxRzXDdXzLnOsWobXVBElJJZt2S4AC5BmRbTuOh/pub?gid=1870481325&single=true&output=csv'; 
 
     window.allPlayers = [];
     window.attendanceLogs = [];
@@ -85,7 +84,6 @@
             const lbTxt = await lbRes.text();
             const diTxt = await diRes.text();
 
-            // Store raw logs for searching
             window.attendanceLogs = diTxt.split('\n').map(line => line.split(','));
 
             const lines = lbTxt.split('\n');
@@ -156,18 +154,28 @@
         const modal = new bootstrap.Modal(document.getElementById('attendanceModal'));
         document.getElementById('modalPlayerName').innerText = name;
         const venues = ['BeyKita!', 'ThePlayground', 'BeyDen', 'BeyDojo'];
-        const months = [{l:'April 2026', m:'/04/'}, {l:'May 2026', m:'/05/'}, {l:'June 2026', m:'/06/'}];
+        
+        // Updated month map to look for /04/, /05/, /06/ (dd/mm/yyyy)
+        const months = [
+            { label: 'April 2026', key: '/04/' },
+            { label: 'May 2026', key: '/05/' },
+            { label: 'June 2026', key: '/06/' }
+        ];
         
         let html = '';
         months.forEach(month => {
-            html += `<p class="small text-warning mt-3 mb-1 fw-bold text-uppercase">${month.l}</p>`;
+            html += `<p class="small text-warning mt-3 mb-1 fw-bold text-uppercase">${month.label}</p>`;
             venues.forEach(v => {
                 const attended = window.attendanceLogs.some(row => {
                     if (row.length < 3) return false;
-                    const logDate = row[0].toString();
+                    const logDate = row[0].toString(); // dd/mm/yyyy
                     const logVenue = row[1].trim();
                     const logName = row[2].trim().toLowerCase();
-                    return logName === name.toLowerCase().trim() && logVenue === v && logDate.includes(month.m);
+                    
+                    // Check name, venue, and if the date contains our month key
+                    return logName === name.toLowerCase().trim() && 
+                           logVenue === v && 
+                           logDate.includes(month.key);
                 });
                 html += `
                     <div class="check-item ${attended ? 'status-attended' : 'status-missing'}">
