@@ -15,9 +15,6 @@
         .venue-month { color: #94a3b8; font-size: 0.75rem; margin-bottom: 10px; border-bottom: 1px solid #374151; padding-bottom: 5px; }
         .search-bar { background: #0f172a; border: 1px solid #334155; color: white; border-radius: 10px; padding: 12px; width: 100%; margin-bottom: 20px; }
         .rank-badge { width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; border-radius: 50%; font-weight: bold; background: #334155; font-size: 0.8rem; }
-        .rank-1 { background: #fbbf24; color: #000; }
-        .rank-2 { background: #94a3b8; color: #000; }
-        .rank-3 { background: #92400e; color: #fff; }
         .row-qualifier { background-color: rgba(59, 130, 246, 0.1) !important; border-left: 4px solid #3b82f6; }
         .player-link { cursor: pointer; color: #60a5fa; text-decoration: underline dotted; }
         .player-link:hover { color: #fbbf24; }
@@ -31,7 +28,7 @@
 
 <div class="hero mb-4">
     <h1 class="fw-bold">BEYBLADE TOWN LEAGUE 2026</h1>
-    <p class="opacity-75">Seasonal Rankings & Attendance Tracker</p>
+    <p class="opacity-75">Live Rankings & Attendance Tracker</p>
 </div>
 
 <div class="container-fluid px-4">
@@ -45,13 +42,13 @@
                         <thead>
                             <tr>
                                 <th>#</th>
-                                <th>Player</th>
+                                <th>Player Name</th>
                                 <th>Bonus</th>
                                 <th class="text-end">Total</th>
                             </tr>
                         </thead>
                         <tbody id="leaderboardBody">
-                            <tr><td colspan="4" class="text-center py-5">Loading data...</td></tr>
+                            <tr><td colspan="4" class="text-center py-5">Syncing data...</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -63,9 +60,9 @@
 
 <div class="modal fade" id="attendanceModal" tabindex="-1">
   <div class="modal-dialog modal-dialog-centered">
-    <div class="modal-content bg-dark text-white border-secondary">
+    <div class="modal-content bg-dark text-white border-secondary shadow-lg">
       <div class="modal-header border-secondary">
-        <h5 class="modal-title" id="modalPlayerName">Attendance Tracker</h5>
+        <h5 class="modal-title" id="modalPlayerName">Attendance Status</h5>
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
       </div>
       <div class="modal-body" id="modalBody"></div>
@@ -75,116 +72,107 @@
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-    // 1. UPDATE THESE TWO LINKS
-    const leaderboardUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTN6e0bZ_iyM0z_nk42aiUL8kelO__vc2-vY_GtENxRzXDdXzLnOsWobXVBElJJZt2S4AC5BmRbTuOh/pub?gid=900577145&single=true&output=csv';
-    const dataInputUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTN6e0bZ_iyM0z_nk42aiUL8kelO__vc2-vY_GtENxRzXDdXzLnOsWobXVBElJJZt2S4AC5BmRbTuOh/pub?gid=1870481325&single=true&output=csv';
+    // --- CONFIGURATION ---
+    const lbUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTN6e0bZ_iyM0z_nk42aiUL8kelO__vc2-vY_GtENxRzXDdXzLnOsWobXVBElJJZt2S4AC5BmRbTuOh/pub?gid=900577145&single=true&output=csv';
+    const diUrl = 'YOUR_DATA_INPUT_PUBLISHED_CSV_URL_HERE'; // <--- PASTE LINK HERE
 
     window.allPlayers = [];
     window.attendanceLogs = [];
 
-    async function fetchData() {
+    async function init() {
         try {
-            // Fetch both sheets at the same time
-            const [lbRes, diRes] = await Promise.all([
-                fetch(leaderboardUrl),
-                fetch(dataInputUrl)
-            ]);
-            
-            const lbCsv = await lbRes.text();
-            const diCsv = await diRes.text();
-            
-            window.attendanceLogs = diCsv.split('\n').map(line => line.split(','));
-            
-            const lbLines = lbCsv.split('\n');
+            const [lbRes, diRes] = await Promise.all([fetch(lbUrl), fetch(diUrl)]);
+            const lbTxt = await lbRes.text();
+            const diTxt = await diRes.text();
+
+            // Store raw logs for searching
+            window.attendanceLogs = diTxt.split('\n').map(line => line.split(','));
+
+            const lines = lbTxt.split('\n');
             window.allPlayers = [];
-            for (let i = 1; i < lbLines.length; i++) {
-                const cols = lbLines[i].split(',');
+            for (let i = 1; i < lines.length; i++) {
+                const cols = lines[i].split(',');
                 if (cols[0] && cols[1] && !isNaN(cols[0])) {
                     window.allPlayers.push({
                         "RANK": cols[0].trim(),
-                        "PLAYER NAME": cols[1].trim(),
-                        "TOTAL SCORE": cols[2].trim(),
-                        "TRAVEL BONUS": cols[3].trim()
+                        "NAME": cols[1].trim(),
+                        "SCORE": cols[2].trim(),
+                        "BONUS": cols[3].trim()
                     });
                 }
             }
-            
-            renderMainTable(window.allPlayers);
-            renderVenueCards(lbLines);
-        } catch (e) { console.error(e); }
+            renderTable(window.allPlayers);
+            renderVenues(lines);
+        } catch (e) { console.error("Error loading data:", e); }
     }
 
-    function renderMainTable(data) {
+    function renderTable(data) {
         const body = document.getElementById('leaderboardBody');
         body.innerHTML = '';
         data.forEach(p => {
+            const rankNum = parseInt(p.RANK);
+            const isTop16 = rankNum <= 16;
             const row = document.createElement('tr');
-            const rank = parseInt(p.RANK);
-            if (rank <= 16) row.classList.add('row-qualifier');
-            
+            if(isTop16) row.classList.add('row-qualifier');
+
             row.innerHTML = `
-                <td><div class="rank-badge ${rank <= 3 ? 'rank-'+rank : ''}">${p.RANK}</div></td>
+                <td><div class="rank-badge ${rankNum <= 3 ? 'rank-'+rankNum : ''}">${p.RANK}</div></td>
                 <td>
-                    <span class="fw-bold player-link" onclick="showAttendance('${p['PLAYER NAME']}')">${p['PLAYER NAME']}</span>
-                    ${rank <= 16 ? '<span class="badge bg-primary ms-2" style="font-size:0.6rem">QUALIFIED</span>' : ''}
+                    <span class="fw-bold player-link" onclick="showAttendance('${p.NAME}')">${p.NAME}</span>
+                    ${isTop16 ? '<span class="badge bg-primary ms-2" style="font-size:0.6rem">QUALIFIED</span>' : ''}
                 </td>
-                <td><small class="text-info">+${p['TRAVEL BONUS']}</small></td>
-                <td class="text-end fw-bold text-info">${p['TOTAL SCORE']}</td>
+                <td><small class="text-info">+${p.BONUS}</small></td>
+                <td class="text-end fw-bold text-info">${p.SCORE}</td>
             `;
             body.appendChild(row);
         });
     }
 
-    function renderVenueCards(lines) {
+    function renderVenues(lines) {
         const left = document.getElementById('leftVenues');
         const right = document.getElementById('rightVenues');
         const header = lines[0].split(',');
-        const configs = [
-            { name: 'BeyKita!', col: 9 }, { name: 'BeyDen', col: 12 }, { name: 'BeyDojo', col: 15 },
-            { name: 'PlayBlade', col: 18 }, { name: 'BeastBey', col: 21 }, { name: 'Theplayground', col: 24 }
+        const conf = [
+            { n: 'BeyKita!', c: 9 }, { n: 'BeyDen', c: 12 }, { n: 'BeyDojo', c: 15 },
+            { n: 'PlayBlade', c: 18 }, { n: 'BeastBey', c: 21 }, { n: 'Theplayground', c: 24 }
         ];
-        
         left.innerHTML = ''; right.innerHTML = '';
-        configs.forEach((v, idx) => {
-            let html = `<div class="venue-card"><div class="venue-title">${v.name}</div><div class="venue-month">${header[v.col] || 'April 2026'}</div>`;
-            // Pulling top 5 from summary for quick view
+        conf.forEach((v, i) => {
+            let html = `<div class="venue-card"><div class="venue-title">${v.n}</div><div class="venue-month">${header[v.c] || 'April 2026'}</div>`;
             let count = 0;
-            for(let i=2; i<lines.length && count<5; i++) {
-                const c = lines[i].split(',');
-                if(c[v.col-1]?.trim()) {
-                    html += `<div class="venue-row"><span>${c[v.col-1]}</span><span class="text-info">${c[v.col]}</span></div>`;
+            for(let j=2; j<lines.length && count < 5; j++) {
+                const cols = lines[j].split(',');
+                if(cols[v.c-1]?.trim()) {
+                    html += `<div class="venue-row"><span>${cols[v.c-1]}</span><span class="text-info">${cols[v.c]}</span></div>`;
                     count++;
                 }
             }
             html += `</div>`;
-            (idx < 3 ? left : right).innerHTML += html;
+            (i < 3 ? left : right).innerHTML += html;
         });
     }
 
-    function showAttendance(playerName) {
+    function showAttendance(name) {
         const modal = new bootstrap.Modal(document.getElementById('attendanceModal'));
-        document.getElementById('modalPlayerName').innerText = playerName;
-        
-        const venues = ['BeyKita!', 'Theplayground', 'BeyDen', 'BeyDojo'];
-        const schedule = [
-            { label: 'April 2026', code: '-04-' },
-            { label: 'May 2026', code: '-05-' },
-            { label: 'June 2026', code: '-06-' }
-        ];
+        document.getElementById('modalPlayerName').innerText = name;
+        const venues = ['BeyKita!', 'ThePlayground', 'BeyDen', 'BeyDojo'];
+        const months = [{l:'April 2026', m:'-04-'}, {l:'May 2026', m:'-05-'}, {l:'June 2026', m:'-06-'}];
         
         let html = '';
-        schedule.forEach(month => {
-            html += `<p class="small text-warning mt-3 mb-1 fw-bold">${month.label}</p>`;
+        months.forEach(month => {
+            html += `<p class="small text-warning mt-3 mb-1 fw-bold text-uppercase">${month.l}</p>`;
             venues.forEach(v => {
-                const attended = window.attendanceLogs.some(row => 
-                    row[2]?.trim().toLowerCase() === playerName.toLowerCase() && 
-                    row[1]?.trim() === v && 
-                    row[0]?.includes(month.code)
-                );
+                const attended = window.attendanceLogs.some(row => {
+                    if (row.length < 3) return false;
+                    const logDate = row[0].toString();
+                    const logVenue = row[1].trim();
+                    const logName = row[2].trim().toLowerCase();
+                    return logName === name.toLowerCase().trim() && logVenue === v && logDate.includes(month.m);
+                });
                 html += `
                     <div class="check-item ${attended ? 'status-attended' : 'status-missing'}">
                         <span>${v}</span>
-                        <small>${attended ? '✅ ATTENDED' : '❌ MISSING'}</small>
+                        <small class="fw-bold">${attended ? '✓ ATTENDED' : '× MISSING'}</small>
                     </div>`;
             });
         });
@@ -193,11 +181,11 @@
     }
 
     function filterData() {
-        const term = document.getElementById('playerSearch').value.toLowerCase();
-        renderMainTable(window.allPlayers.filter(p => p['PLAYER NAME'].toLowerCase().includes(term)));
+        const query = document.getElementById('playerSearch').value.toLowerCase();
+        renderTable(window.allPlayers.filter(p => p.NAME.toLowerCase().includes(query)));
     }
 
-    window.onload = fetchData;
+    window.onload = init;
 </script>
 </body>
 </html>
