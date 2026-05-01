@@ -10,7 +10,7 @@
         body { background-color: #0b1120; color: #f8fafc; font-family: 'Inter', sans-serif; }
         .hero { background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%); padding: 30px 10px; text-align: center; border-bottom: 4px solid #fbbf24; }
         .main-card { background: #1e293b; border-radius: 16px; padding: 20px; border: 1px solid #334155; }
-        .venue-card { background: #111827; border-radius: 12px; padding: 15px; margin-bottom: 20px; border: 1px solid #374151; }
+        .venue-card { background: #111827; border-radius: 12px; padding: 15px; margin-bottom: 20px; border: 1px solid #374151; min-height: 200px; }
         .venue-title { color: #fbbf24; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 2px; }
         .venue-month { color: #94a3b8; font-size: 0.75rem; margin-bottom: 10px; border-bottom: 1px solid #374151; padding-bottom: 5px; }
         .search-bar { background: #0f172a; border: 1px solid #334155; color: white; border-radius: 10px; padding: 12px; width: 100%; margin-bottom: 20px; }
@@ -22,6 +22,12 @@
         .check-item { padding: 10px; border-radius: 8px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; font-size: 0.9rem; }
         .status-attended { background: rgba(16, 185, 129, 0.15); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.3); }
         .status-missing { background: rgba(239, 68, 68, 0.15); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.3); }
+        
+        /* Month Switcher Styles */
+        .month-nav { display: flex; justify-content: space-between; align-items: center; background: #1e293b; border-radius: 10px; padding: 5px 15px; margin-bottom: 15px; border: 1px solid #334155; }
+        .nav-btn { background: none; border: none; color: #fbbf24; font-size: 1.5rem; cursor: pointer; transition: transform 0.2s; }
+        .nav-btn:hover { transform: scale(1.2); }
+        .month-display { font-weight: bold; text-transform: uppercase; letter-spacing: 1px; font-size: 0.9rem; }
     </style>
 </head>
 <body>
@@ -33,7 +39,17 @@
 
 <div class="container-fluid px-4">
     <div class="row">
-        <div class="col-lg-3 order-2 order-lg-1" id="leftVenues"></div>
+        <!-- Left Side Venues -->
+        <div class="col-lg-3 order-2 order-lg-1">
+            <div class="month-nav">
+                <button class="nav-btn" onclick="changeMonth(-1)">‹</button>
+                <div class="month-display" id="monthLabelLeft">April 2026</div>
+                <button class="nav-btn" onclick="changeMonth(1)">›</button>
+            </div>
+            <div id="leftVenues"></div>
+        </div>
+
+        <!-- Center Leaderboard -->
         <div class="col-lg-6 order-1 order-lg-2">
             <div class="main-card mb-4">
                 <input type="text" id="playerSearch" class="search-bar" placeholder="🔍 Search player name..." onkeyup="filterData()">
@@ -54,7 +70,16 @@
                 </div>
             </div>
         </div>
-        <div class="col-lg-3 order-3 order-lg-3" id="rightVenues"></div>
+
+        <!-- Right Side Venues -->
+        <div class="col-lg-3 order-3 order-lg-3">
+            <div class="month-nav">
+                <button class="nav-btn" onclick="changeMonth(-1)">‹</button>
+                <div class="month-display" id="monthLabelRight">April 2026</div>
+                <button class="nav-btn" onclick="changeMonth(1)">›</button>
+            </div>
+            <div id="rightVenues"></div>
+        </div>
     </div>
 </div>
 
@@ -77,6 +102,8 @@
 
     window.allPlayers = [];
     window.attendanceLogs = [];
+    window.rawLines = [];
+    window.currentMonthIndex = 0; // 0=April, 1=May, 2=June
 
     async function init() {
         try {
@@ -85,11 +112,11 @@
             const diTxt = await diRes.text();
 
             window.attendanceLogs = diTxt.split('\n').map(line => line.split(','));
+            window.rawLines = lbTxt.split('\n');
 
-            const lines = lbTxt.split('\n');
             window.allPlayers = [];
-            for (let i = 1; i < lines.length; i++) {
-                const cols = lines[i].split(',');
+            for (let i = 1; i < window.rawLines.length; i++) {
+                const cols = window.rawLines[i].split(',');
                 if (cols[0] && cols[1] && !isNaN(cols[0])) {
                     window.allPlayers.push({
                         "RANK": cols[0].trim(),
@@ -100,7 +127,7 @@
                 }
             }
             renderTable(window.allPlayers);
-            renderVenues(lines);
+            renderVenues();
         } catch (e) { console.error("Error loading data:", e); }
     }
 
@@ -126,25 +153,49 @@
         });
     }
 
-    function renderVenues(lines) {
+    function changeMonth(step) {
+        window.currentMonthIndex = (window.currentMonthIndex + step + 3) % 3;
+        renderVenues();
+    }
+
+    function renderVenues() {
         const left = document.getElementById('leftVenues');
         const right = document.getElementById('rightVenues');
+        const lines = window.rawLines;
         const header = lines[0].split(',');
+        
+        // Define column offsets for each month (April starts at 9, May at 10, June at 11 based on original logic)
+        // Adjusting based on your data structure: if BeyKita April is 9, May is usually next set or offset
+        // Here we use +currentMonthIndex to shift the lookup column
+        const monthOffset = window.currentMonthIndex;
+        
         const conf = [
-            { n: 'BeyKita!', c: 9 }, { n: 'BeyDen', c: 12 }, { n: 'BeyDojo', c: 15 },
-            { n: 'PlayBlade', c: 18 }, { n: 'BeastBey', c: 21 }, { n: 'ThePlayground', c: 24 }
+            { n: 'BeyKita!', c: 9 + monthOffset }, 
+            { n: 'BeyDen', c: 12 + monthOffset }, 
+            { n: 'BeyDojo', c: 15 + monthOffset },
+            { n: 'PlayBlade', c: 18 + monthOffset }, 
+            { n: 'BeastBey', c: 21 + monthOffset }, 
+            { n: 'ThePlayground', c: 24 + monthOffset }
         ];
+
+        // Update Labels
+        const monthNames = ["April 2026", "May 2026", "June 2026"];
+        document.getElementById('monthLabelLeft').innerText = monthNames[window.currentMonthIndex];
+        document.getElementById('monthLabelRight').innerText = monthNames[window.currentMonthIndex];
+
         left.innerHTML = ''; right.innerHTML = '';
         conf.forEach((v, i) => {
-            let html = `<div class="venue-card"><div class="venue-title">${v.n}</div><div class="venue-month">${header[v.c] || 'April 2026'}</div>`;
+            let html = `<div class="venue-card"><div class="venue-title">${v.n}</div><div class="venue-month">${header[v.c] || monthNames[window.currentMonthIndex]}</div>`;
             let count = 0;
             for(let j=2; j<lines.length && count < 5; j++) {
                 const cols = lines[j].split(',');
+                // v.c-1 is the name, v.c is the points/rank info
                 if(cols[v.c-1]?.trim()) {
                     html += `<div class="venue-row"><span>${cols[v.c-1]}</span><span class="text-info">${cols[v.c]}</span></div>`;
                     count++;
                 }
             }
+            if(count === 0) html += `<div class="text-muted small py-3">No data for this month</div>`;
             html += `</div>`;
             (i < 3 ? left : right).innerHTML += html;
         });
@@ -155,7 +206,6 @@
         document.getElementById('modalPlayerName').innerText = name;
         const venues = ['BeyKita!', 'ThePlayground', 'BeyDen', 'BeyDojo'];
         
-        // Updated month map to look for /04/, /05/, /06/ (dd/mm/yyyy)
         const months = [
             { label: 'April 2026', key: '/04/' },
             { label: 'May 2026', key: '/05/' },
@@ -168,11 +218,9 @@
             venues.forEach(v => {
                 const attended = window.attendanceLogs.some(row => {
                     if (row.length < 3) return false;
-                    const logDate = row[0].toString(); // dd/mm/yyyy
+                    const logDate = row[0].toString(); 
                     const logVenue = row[1].trim();
                     const logName = row[2].trim().toLowerCase();
-                    
-                    // Check name, venue, and if the date contains our month key
                     return logName === name.toLowerCase().trim() && 
                            logVenue === v && 
                            logDate.includes(month.key);
