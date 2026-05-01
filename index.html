@@ -171,7 +171,7 @@
             { n: 'BeyDojo', c: 14 }, // Col O (Index 14)
             { n: 'PlayBlade', c: 17 }, // Col R (Index 17)
             { n: 'BeastBey', c: 20 },  // Col U (Index 20)
-            { n: 'Theplayground', c: 23 } // Col X (Index 23)
+            { n: 'ThePlayground', c: 23 } // Col X (Index 23)
         ];
 
         left.innerHTML = ''; right.innerHTML = '';
@@ -200,7 +200,7 @@
     function showAttendance(name) {
         const modal = new bootstrap.Modal(document.getElementById('attendanceModal'));
         document.getElementById('modalPlayerName').innerText = name;
-        const venues = ['BeyKita!', 'Theplayground', 'BeyDen', 'BeyDojo'];
+        const venues = ['BeyKita!', 'ThePlayground', 'BeyDen', 'BeyDojo'];
         const months = [{l:'April',k:'/04/'}, {l:'May',k:'/05/'}, {l:'June',k:'/06/'}];
         let html = '';
         months.forEach(m => {
